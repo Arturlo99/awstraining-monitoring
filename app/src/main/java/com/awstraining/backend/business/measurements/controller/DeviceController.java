@@ -15,8 +15,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.MeterRegistry;
 
 @RestController
 @RequestMapping("device/v1")
@@ -32,20 +30,13 @@ class DeviceController implements DeviceIdApi {
 
     @Override
     public ResponseEntity<Measurement> publishMeasurements(final String deviceId, final Measurement measurement) {
-        String methodName = new Object(){}.getClass().getEnclosingMethod().getName();
         LOGGER.info("Publishing measurement for device '{}'", deviceId);
         final MeasurementDO measurementDO = fromMeasurement(deviceId, measurement);
         service.saveMeasurement(measurementDO);
-        Counter counter = Counter
-                .builder("publishMeasurements.counter")
-                .tag("method", methodName)
-                .register(meterRegistry);
-        counter.increment();
         return ResponseEntity.ok(measurement);
     }
     @Override
     public ResponseEntity<Measurements> retrieveMeasurements(final String deviceId) {
-        String methodName = new Object(){}.getClass().getEnclosingMethod().getName();
         LOGGER.info("Retrieving all measurements for device '{}'", deviceId);
         final List<Measurement> measurements = service.getMeasurements()
                 .stream()
@@ -53,11 +44,6 @@ class DeviceController implements DeviceIdApi {
                 .toList();
         final Measurements measurementsResult = new Measurements();
         measurementsResult.measurements(measurements);
-        Counter counter = Counter
-            .builder("retrieveMeasurements.counter")
-            .tag("method", methodName)
-            .register(meterRegistry);
-        counter.increment();
         LOGGER.info("Size of measurements: '{}'", measurementsResult.getMeasurements().size());
         return ResponseEntity.ok(measurementsResult);
     }
